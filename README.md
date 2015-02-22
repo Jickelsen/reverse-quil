@@ -1,6 +1,6 @@
 # reverse-quil
 
-A game-like simulation built with Quil, soon to have game-state undo.
+A game-like simulation built with Quil. Control the ball with WASD and reverse time with shift.
 
 ## Usage
 

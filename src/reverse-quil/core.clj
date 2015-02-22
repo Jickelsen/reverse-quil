@@ -4,7 +4,16 @@
             [quil.middleware :as m]))
 
 (def game-state (atom {:pos {:x 250 :y 250} 
-                       :velocity {:x -10 :y -0.1}}) )
+                       :velocity {:x -10 :y -0.1}}))
+
+(def game-history (atom [@game-state]))
+
+(def tt (atom false))
+
+(add-watch game-state :history
+  (fn [_ _ _ n]
+    (when-not (= (last @game-history) n)
+      (swap! game-history conj n))))
 
 (defn put! [m k v]
   (swap! m assoc k v))
@@ -56,35 +65,43 @@
   (- x speed))
 
 (defn key-pressed []
-  (cond
-    (= (q/key-code) KeyEvent/VK_W)
-      (update-in! game-state [:velocity :y] go-up)
-    (= (q/key-code) KeyEvent/VK_S)
-      (update-in! game-state [:velocity :y] go-down)
-    (= (q/key-code) KeyEvent/VK_A)
-      (update-in! game-state [:velocity :x] go-left)
-    (= (q/key-code) KeyEvent/VK_D)
-        (update-in! game-state [:velocity :x] go-right)
-    (= (q/key-code) KeyEvent/VK_SHIFT)
-        (reset! game-state {:pos {:x 150 :y 50}
-                   :velocity {:x 0 :y 0}})))
+  (if (not @tt) 
+    (cond
+     (= (q/key-code) KeyEvent/VK_W)
+     (update-in! game-state [:velocity :y] go-up)
+     (= (q/key-code) KeyEvent/VK_S)
+     (update-in! game-state [:velocity :y] go-down)
+     (= (q/key-code) KeyEvent/VK_A)
+     (update-in! game-state [:velocity :x] go-left)
+     (= (q/key-code) KeyEvent/VK_D)
+     (update-in! game-state [:velocity :x] go-right)))
+  (if (= (q/key-code) KeyEvent/VK_SHIFT) 
+    (swap! tt #(not %))))
 
 (defn update []
-  (apply-gravity game-state)
-  (move game-state)
-  (bounds game-state))
+  (if @tt 
+    (if (> (count @game-history) 1)
+      (do (swap! game-history pop)
+          (reset! game-state (last @game-history)))
+      (reset! tt false))
+    (do (apply-gravity game-state)
+        (move game-state)
+        (bounds game-state))))
 
 (defn draw []
-  (q/background 100 100 100)
-; Draw the circle.
-  (q/ellipse (get-in @game-state [:pos :x]) (get-in @game-state [:pos :y]) char-width char-height))
+  (if @tt
+    (q/background 155 165 55)
+    (q/background 225 125 75))
+  (q/stroke 65 35 31)
+  (q/fill 133 70 63)
+  (q/ellipse (:x (:pos @game-state)) (:y (:pos @game-state)) char-width char-height))
 
 (q/defsketch reverse-quil
   :title "A game-like simulation built with Quil, with game-state undo."
   :size [WIDTH HEIGHT]
   :setup setup
   :draw (fn []
-        (update)
-        (draw))
+          (update)
+          (draw))
   :key-pressed key-pressed
   )
