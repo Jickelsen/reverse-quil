@@ -33,27 +33,27 @@
   (q/frame-rate 60))
 
 (defn move [state]
-  (swap! state (fn [x] (update-in x [:pos] #(merge-with + % (:velocity x))))))
+  (update-in state [:pos] #(merge-with + state % (:velocity state))))
 
 (defn apply-gravity [state]
-  (update-in! state [:velocity :y] #(+ % gravity)))
+  (update-in state [:velocity :y] #(+ % gravity)))
 
 (defn bounds [state]
-        (update-in! state
-         [:pos] #(identity {:x (min WIDTH (:x %) )
-                   :y (min HEIGHT (:y %) )}))
-        (swap! state #(assoc % :velocity {
-                                :x (if (>= (:x (:pos %)) WIDTH)
-                                    0
-                                    (if (<= (:x (:pos %)) 0)
-                                      0
-                                      (:x (:velocity %))))
-                                :y (if (>= (:y (:pos %)) HEIGHT)
-                                     0
-                                     (if (<= (:y (:pos %)) 0)
-                                       0
-                                       (:y (:velocity %))))})))
-
+  (-> state
+      (update-in
+       [:pos] #(identity {:x (min WIDTH (:x %) )
+                          :y (min HEIGHT (:y %) )}))
+      (#(assoc % :velocity {
+                            :x (if (>= (:x (:pos %)) WIDTH)
+                                 0
+                                 (if (<= (:x (:pos %)) 0)
+                                   0
+                                   (:x (:velocity %))))
+                            :y (if (>= (:y (:pos %)) HEIGHT)
+                                 0
+                                 (if (<= (:y (:pos %)) 0)
+                                   0
+                                   (:y (:velocity %))))}))))
 
 (defn go-up [y]
   (- y speed))
@@ -78,30 +78,37 @@
   (if (= (q/key-code) KeyEvent/VK_SHIFT) 
     (swap! tt #(not %))))
 
-(defn update []
-  (if @tt 
-    (if (> (count @game-history) 1)
-      (do (swap! game-history pop)
-          (reset! game-state (last @game-history)))
-      (reset! tt false))
-    (do (apply-gravity game-state)
-        (move game-state)
-        (bounds game-state))))
+(defn update-state [state]
+  (-> state
+      apply-gravity
+      move
+      bounds))
 
-(defn draw []
-  (if @tt
+(defn draw-state [state tt]
+  (if tt
     (q/background 155 165 55)
     (q/background 225 125 75))
   (q/stroke 65 35 31)
   (q/fill 133 70 63)
-  (q/ellipse (:x (:pos @game-state)) (:y (:pos @game-state)) char-width char-height))
+  (q/ellipse (:x (:pos state)) (:y (:pos state)) char-width char-height))
+
+(defn time-travel []
+  (if (> (count @game-history) 1)
+    (do (swap! game-history pop)
+        (reset! game-state (last @game-history)))
+    (reset! tt false)))
+
+(defn iteration []
+  "Inspired by https://gist.github.com/nbeloglazov/7920049"
+  (if @tt
+    (time-travel)
+    (swap! game-state update-state))
+  (draw-state @game-state @tt))
 
 (q/defsketch reverse-quil
-  :title "A game-like simulation built with Quil, with game-state undo."
+  :title "A game-like simulation built with Quil, with game-state undo"
   :size [WIDTH HEIGHT]
   :setup setup
-  :draw (fn []
-          (update)
-          (draw))
+  :draw iteration
   :key-pressed key-pressed
   )
