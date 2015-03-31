@@ -1,0 +1,12 @@
+(ns reverse-quil.component)
+
+(defrecord Position [x y a])
+(defrecord Velocity [x y a])
+(defrecord Ship [])
+(defrecord Ship1 [])
+(defrecord Ship2 [])
+(defrecord Score1 [])
+(defrecord Score2 [])
+(defrecord Score [score])
+(defrecord Shot [])
+(defrecord Renderer [renderer])
