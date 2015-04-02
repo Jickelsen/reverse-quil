@@ -8,8 +8,8 @@
   (:import [java.awt.event KeyEvent]
            [reverse_quil.component Ship Ship1 Ship Position Velocity Renderer]))
 
-(def speed 10)
-(def gravity 0.5)
+(def speed 1)
+(def gravity 0.01)
 (def char-width 50)
 (def char-height 50)
 (def WIDTH 500)
@@ -103,8 +103,8 @@
         (q/push-matrix)
         (q/translate x y)
         (q/rotate a)
-        (q/ellipse 0 0 char-width char-height)
-        ;; ((e/get-component state renderable Renderer))
+
+        ((:renderer (e/get-component state renderable Renderer)))
         (q/pop-matrix)))
     state))
 
